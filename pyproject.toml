@@ -18,6 +18,10 @@ classifiers = [
   'Programming Language :: Python'
 ]
 
+dependencies = [
+  'typing-extensions ; python_version < "3.8"',
+]
+
 [project.optional-dependencies]
 test = [
   'pytest',

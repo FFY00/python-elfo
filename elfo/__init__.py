@@ -4,8 +4,15 @@ import contextlib
 import dataclasses
 import io
 import struct
+import sys
 
-from typing import Any, Iterator, Literal, Tuple
+from typing import Any, Iterator, Tuple
+
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 
 class _Printable():
