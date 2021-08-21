@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import contextlib
 import dataclasses
 import io
 import struct
 import sys
 
-from typing import Any, Iterator, Tuple, Union
+from typing import Any, Tuple, Union
 
 from elfo._data import EI, ELFCLASS, ELFDATA, EM, ET, EV, OSABI
 from elfo._util import _Printable
@@ -175,11 +174,10 @@ class ELF(_Printable):
         return cls(ELFHeader.from_fd(fd))
 
     @classmethod
-    @contextlib.contextmanager
-    def from_path(cls, path: str) -> Iterator[ELF]:
+    def from_path(cls, path: str) -> ELF:
         with open(path, 'rb', buffering=False) as fd:
             assert isinstance(fd, io.RawIOBase)  # oh silly typeshed
-            yield cls.from_fd(fd)
+            return cls.from_fd(fd)
 
     def __bytes__(self) -> bytes:
         return bytes(self.header)
