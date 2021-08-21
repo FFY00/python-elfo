@@ -18,6 +18,8 @@ class _Printable():
         def value_repr(value: Any) -> str:
             if isinstance(value, _Printable):
                 return value._repr(level + 1)
+            elif isinstance(value, bytes) and len(value) > 32:
+                return f'<bytes: size={len(value)}>'
             elif isinstance(value, int) and not isinstance(value, _EnumItem):
                 hex_repr = f'{value:x}'
                 hex_repr = ('0' * (len(hex_repr) % 2)) + hex_repr

@@ -178,10 +178,14 @@ class ELF(_Printable):
     """ELF file."""
 
     header: ELFHeader
+    data: bytes
 
     @classmethod
     def from_fd(cls, fd: io.RawIOBase) -> ELF:
-        return cls(ELFHeader.from_fd(fd))
+        header = ELFHeader.from_fd(fd)
+        data = fd.read()
+        assert data
+        return cls(header, data)
 
     @classmethod
     def from_path(cls, path: str) -> ELF:
@@ -190,7 +194,7 @@ class ELF(_Printable):
             return cls.from_fd(fd)
 
     def __len__(self) -> int:
-        return len(self.header)
+        return len(self.header) + len(self.data)
 
     def __bytes__(self) -> bytes:
-        return bytes(self.header)
+        return bytes(self.header) + self.data
