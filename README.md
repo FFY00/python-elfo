@@ -6,14 +6,9 @@ ELF file deserializer and serializer library.
 
 
 ```python
->>> with elfo.ELF.from_path('main') as elf:
-...     print(elf)
-...     print(bytes(elf))
-...     elf.header.e_ident.os_abi = elfo.OSABI.FREEBSD
-...     elf.header.e_machine = elfo.EM.PPC64
-...     print(elf)
-...     print(bytes(elf))
-...
+>>> import elfo
+>>> elf = elfo.ELF.from_path('main')
+>>> elf
 ELF(
   header=ELFHeader(
     e_ident=e_ident(
@@ -39,7 +34,11 @@ ELF(
     e_shstrndx=0x1d,
   ),
 )
+>>> bytes(elf)
 b'\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00>\x00\x01\x00\x00\x00P\x10\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x807\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x008\x00\r\x00@\x00\x1e\x00\x1d\x00'
+>>> elf.header.e_ident.os_abi = elfo.OSABI.FREEBSD
+>>> elf.header.e_machine = elfo.EM.PPC64
+>>> elf
 ELF(
   header=ELFHeader(
     e_ident=e_ident(
@@ -65,5 +64,6 @@ ELF(
     e_shstrndx=0x1d,
   ),
 )
+>>> bytes(elf)
 b'\x7fELF\x02\x01\x01\t\x00\x00\x00\x00\x00\x00\x00\x00\x03\x00\x15\x00\x01\x00\x00\x00P\x10\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x807\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x008\x00\r\x00@\x00\x1e\x00\x1d\x00'
 ```
