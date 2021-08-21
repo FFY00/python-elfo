@@ -67,6 +67,27 @@ class EI:
     PAD = 0x09
 
 
+class ABI:
+    SYSTEM_V = 0x00
+    HP_UX = 0x01
+    NETBSD = 0x02
+    LINUX = 0x03
+    GNU_HURD = 0x04
+    SOLARIS = 0x06
+    AIX = 0x07
+    IRIX = 0x08
+    FREEBSD = 0x09
+    TRU64 = 0x0a
+    NOVELL_MODESTO = 0x0b
+    OPENBSD = 0x0c
+    OPENVMS = 0x0d
+    NONSTOP_KERNEL = 0x0e
+    AROS = 0x0f
+    FENIX_OS = 0x10
+    CLOUDABI = 0x11
+    STRATUS_OPENVOS = 0x12
+
+
 def _unpack(description: str, size: int, fd: io.RawIOBase) -> Tuple[Any, ...]:
     data = fd.read(size)
     assert data
