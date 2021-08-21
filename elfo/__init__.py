@@ -128,6 +128,12 @@ class ELFHeader(_Printable):
         self.e_machine = EM.from_value(self.e_machine)
         self.e_version = EV.from_value_fallback(self.e_version)
 
+        if self.e_ehsize != len(self):
+            raise ELFException(
+                f'Invalid e_ehsize, got `{self.e_ehsize}` '
+                f'but was expecting `{len(self)}`'
+            )
+
     @staticmethod
     def _format(e_ident: ELFHeader.types.e_ident) -> str:
         return ''.join((
