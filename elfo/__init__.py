@@ -8,7 +8,7 @@ import io
 import struct
 import sys
 
-from typing import Any, Iterator, Tuple
+from typing import Any, Dict, Iterator, Tuple
 
 
 if sys.version_info >= (3, 8):
@@ -40,6 +40,46 @@ class _Printable():
         return self._repr(0)
 
 
+class _EnumItem(int):
+    """Custom int that tracks the enum name."""
+
+    name: str
+
+    def __new__(cls, value: int, name: str) -> _EnumItem:
+        obj = super().__new__(cls, value)
+        obj.name = name
+        return obj
+
+    def __repr__(self) -> str:
+        return f'<{self.name}: {int(self)}>'
+
+
+class _EnumMeta(type):
+    def __new__(mcs, name: str, bases: Tuple[Any], dict_: Dict[str, Any]):  # type: ignore
+        return super().__new__(mcs, name, bases, {
+            key: _EnumItem(value, f'{name}.{key}') if isinstance(value, int) else value
+            for key, value in dict_.items()
+        })
+
+    @property
+    def value_dict(self) -> Dict[int, _EnumItem]:
+        return {
+            int(value): value
+            for value in vars(self).values()
+            if isinstance(value, _EnumItem)
+        }
+
+
+class _Enum(metaclass=_EnumMeta):
+    @classmethod
+    def from_value(cls, value: int) -> _EnumItem:
+        for item in vars(cls).values():
+            if item == value:
+                assert isinstance(item, _EnumItem)
+                return item
+        raise ValueError(f'Item not found for `{value}`')
+
+
 class ELFException(Exception):
     pass
 
@@ -55,7 +95,7 @@ class NotAnELF(ELFException):
         return f'File is not an ELF file: {self._file}'
 
 
-class EI:
+class EI(_Enum):
     ## e_indent
     NIDENT = 0x0f  # size
     # indexes
@@ -65,9 +105,31 @@ class EI:
     OSABI = 0x07
     ABIVERSION = 0x08
     PAD = 0x09
+    ## e_type
+    NONE = 0x00
+    REL = 0x01
+    EXEC = 0x02
+    DYN = 0x03
+    CORE = 0x04
+    LOOS = 0xfe00
+    HIOS = 0xfeff
+    LOPROC = 0xff00
+    HIPROC = 0xffff
 
 
-class ABI:
+class ELFCLASS(_Enum):
+    NONE = 0
+    _32 = 1
+    _64 = 2
+
+
+class ELFDATA(_Enum):
+    NONE = 0
+    LSB = 1
+    MSB = 2
+
+
+class OSABI(_Enum):
     SYSTEM_V = 0x00
     HP_UX = 0x01
     NETBSD = 0x02
@@ -109,6 +171,11 @@ class ELFHeader(_Printable):
             file_version: int
             os_abi: int
             abi_version: int
+
+            def __post_init__(self) -> None:
+                self.file_class = ELFCLASS.from_value(self.file_class)
+                self.data_encoding = ELFDATA.from_value(self.data_encoding)
+                self.os_abi = OSABI.from_value(self.os_abi)
 
             @classmethod
             def from_fd(cls, fd: io.RawIOBase) -> ELFHeader.types.e_ident:
