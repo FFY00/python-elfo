@@ -96,7 +96,7 @@ class NotAnELF(ELFException):
 
 
 class EI(_Enum):
-    ## e_indent
+    ## e_ident
     NIDENT = 0x0f  # size
     # indexes
     CLASS = 0x04
