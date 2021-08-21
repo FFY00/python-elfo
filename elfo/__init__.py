@@ -65,7 +65,7 @@ class EI:
     PAD = 0x09
 
 
-def unpack(description: str, size: int, fd: io.RawIOBase) -> Tuple[Any, ...]:
+def _unpack(description: str, size: int, fd: io.RawIOBase) -> Tuple[Any, ...]:
     data = fd.read(size)
     assert data
     return struct.unpack('BBBBB', data)
@@ -94,7 +94,7 @@ class ELFHeader(_Printable):
                     raise NotAnELF(fd)
                 return cls(
                     b'\x7fELF',
-                    *unpack('BBBBB', 5, fd),
+                    *_unpack('BBBBB', 5, fd),
                 )
 
             def __bytes__(self) -> bytes:
