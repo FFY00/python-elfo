@@ -95,6 +95,9 @@ class ELFHeader(_Printable):
                     return 'Q'
                 raise ValueError(f'Unkown class: {self.file_class}')
 
+            def __len__(self) -> int:
+                return EI.NIDENT
+
             def __bytes__(self) -> bytes:
                 return self.file_identification + struct.pack(
                     'BBBBB',
@@ -144,6 +147,13 @@ class ELFHeader(_Printable):
             *_unpack(cls._format(e_ident), fd),
         )
 
+    def __len__(self) -> int:
+        if self.e_ident.file_class == ELFCLASS._32:
+            return 52
+        elif self.e_ident.file_class == ELFCLASS._64:
+            return 64
+        raise ValueError(f'Unkown class: {self.e_ident.file_class}')
+
     def __bytes__(self) -> bytes:
         return bytes(self.e_ident) + struct.pack(
             self._format(self.e_ident),
@@ -178,6 +188,9 @@ class ELF(_Printable):
         with open(path, 'rb', buffering=False) as fd:
             assert isinstance(fd, io.RawIOBase)  # oh silly typeshed
             return cls.from_fd(fd)
+
+    def __len__(self) -> int:
+        return len(self.header)
 
     def __bytes__(self) -> bytes:
         return bytes(self.header)
