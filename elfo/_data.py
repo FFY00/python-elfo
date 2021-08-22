@@ -55,10 +55,8 @@ class ET(_Enum):
     EXEC = 0x02
     DYN = 0x03
     CORE = 0x04
-    LOOS = 0xfe00
-    HIOS = 0xfeff
-    LOPROC = 0xff00
-    HIPROC = 0xffff
+    OS = (0xfe00, 0xfeff)
+    PROC = (0xff00, 0xffff)
 
 
 class EM(_Enum):
@@ -164,10 +162,8 @@ class SHT(_Enum):
     REL = 9
     SHLIB = 10
     DYNSYM = 11
-    LOPROC = 0x70000000
-    HIPROC = 0x7fffffff
-    LOUSER = 0x80000000
-    HIUSER = 0xffffffff
+    PROC = (0x70000000, 0x7fffffff)
+    USER = (0x80000000, 0xffffffff)
 
 
 class SHF(_Enum, item_cls=_EnumFlagItem):

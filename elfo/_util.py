@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Sequence, Tuple, Type, Union
+import typing
+
+from typing import Any, Dict, Sequence, Tuple, Type
+
+
+def even_hex_repr(value: int) -> str:
+    hex_repr = f'{value:x}'
+    hex_repr = ('0' * (len(hex_repr) % 2)) + hex_repr
+    return f'0x{hex_repr}'
 
 
 class _Printable():
@@ -25,9 +33,7 @@ class _Printable():
             elif isinstance(value, bytes) and len(value) > 32:
                 return f'<bytes: size={len(value)}>'
             elif isinstance(value, int) and not isinstance(value, _EnumItem):
-                hex_repr = f'{value:x}'
-                hex_repr = ('0' * (len(hex_repr) % 2)) + hex_repr
-                return f'0x{hex_repr}'
+                return even_hex_repr(value)
             return repr(value)
 
         return '{}(\n{}{})'.format(self._name, ''.join(
@@ -109,6 +115,20 @@ class _FlagMatch(int, _Printable):
         }
 
 
+class _EnumRangeItem(typing.NamedTuple):
+    """Inclusive range that tracks the enum name."""
+
+    start: int
+    stop: int
+    name: str
+
+    def __repr__(self) -> str:
+        return f'<{self.name}: {even_hex_repr(self.start)}..{even_hex_repr(self.stop)}>'
+
+    def __contains__(self, item: Any) -> bool:
+        return isinstance(item, int) and item in range(self.start, self.stop+1)
+
+
 class _EnumMeta(type):
     def __new__(
         mcs,
@@ -117,8 +137,14 @@ class _EnumMeta(type):
         dict_: Dict[str, Any],
         item_cls: Type[_EnumItem] = _EnumItem,
     ) -> _EnumMeta:
+        def enum_item(value: Any, name: str) -> Any:
+            if isinstance(value, int):
+                return item_cls(value, name)
+            elif isinstance(value, tuple):
+                return _EnumRangeItem(value[0], value[1], name)
+            return value
         new_dict = {
-            key: item_cls(value, f'{name}.{key}') if isinstance(value, int) else value
+            key: enum_item(value, f'{name}.{key}')
             for key, value in dict_.items()
         }
         new_dict.update({'_item_cls': item_cls})
@@ -137,7 +163,7 @@ class _Enum(metaclass=_EnumMeta):
     _item_cls: Type[_EnumItem]
 
     @classmethod
-    def from_value(cls, value: int) -> Union[_EnumItem, _FlagMatch]:
+    def from_value(cls, value: int) -> int:
         if cls._item_cls is _EnumFlagItem:
             return _FlagMatch(value, [
                 value for value in vars(cls).values()
@@ -145,8 +171,10 @@ class _Enum(metaclass=_EnumMeta):
             ])
 
         for item in vars(cls).values():
-            if item == value:
-                assert isinstance(item, _EnumItem)
+            if isinstance(item, _EnumRangeItem) and value in item:
+                return _EnumItem(value, item.name)
+            elif item == value:
+                assert isinstance(item, int)
                 return item
         raise ValueError(f'Item not found for 0x{value:x} in {cls.__name__}')
 
