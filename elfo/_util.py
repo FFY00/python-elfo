@@ -39,7 +39,11 @@ class _Printable():
                 return value._repr(level + 1)
             elif isinstance(value, bytes) and len(value) > 32:
                 return f'<bytes: size={len(value)}>'
-            elif isinstance(value, int) and not isinstance(value, _EnumItem):
+            elif (
+                isinstance(value, int)
+                and not isinstance(value, bool)
+                and not isinstance(value, _EnumItem)
+            ):
                 return even_hex_repr(value)
             return repr(value)
 
