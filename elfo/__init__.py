@@ -236,7 +236,10 @@ class _DeriveSerialization(abc.ABC):
     def __bytes__(self) -> bytes:
         return struct.pack(
             self._format(self._e_ident),
-            *dataclasses.fields(self),
+            *tuple(
+                value for key, value in vars(self).items()
+                if not key.startswith('_')
+            ),
         )
 
 
