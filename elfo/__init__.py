@@ -322,7 +322,7 @@ class ELFProgramHeader(_Printable, _DeriveSerialization):
                 self.p_align,
             ) = args
         else:
-            raise ValueError(f'Unkown class: {_e_ident.file_class}')
+            raise ValueError(f'Unknown class: {_e_ident.file_class}')
 
     @staticmethod
     def _format(e_ident: ELFHeader.types.e_ident) -> str:
