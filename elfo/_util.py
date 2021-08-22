@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import sys
 import typing
 
 from typing import Any, Dict, Sequence, Tuple, Type
+
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 
 def even_hex_repr(value: int) -> str:
@@ -129,20 +136,29 @@ class _EnumRangeItem(typing.NamedTuple):
         return isinstance(item, int) and item in range(self.start, self.stop+1)
 
 
+DATA_TYPE_CLS = {
+    'value': _EnumItem,
+    'flag': _EnumFlagItem,
+}
+
+
 class _EnumMeta(type):
     def __new__(
         mcs,
         name: str,
         bases: Tuple[Any],
         dict_: Dict[str, Any],
-        item_cls: Type[_EnumItem] = _EnumItem,
+        data_type: Literal['value', 'flag'] = 'value',
     ) -> _EnumMeta:
+        item_cls = DATA_TYPE_CLS[data_type]
+
         def enum_item(value: Any, name: str) -> Any:
             if isinstance(value, int):
                 return item_cls(value, name)
             elif isinstance(value, tuple):
                 return _EnumRangeItem(value[0], value[1], name)
             return value
+
         new_dict = {
             key: enum_item(value, f'{name}.{key}')
             for key, value in dict_.items()

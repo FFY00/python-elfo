@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 
-from elfo._util import _Enum, _EnumFlagItem
+from elfo._util import _Enum
 
 
 class EI(_Enum):
@@ -166,7 +166,7 @@ class SHT(_Enum):
     USER = (0x80000000, 0xffffffff)
 
 
-class SHF(_Enum, item_cls=_EnumFlagItem):
+class SHF(_Enum, data_type='flag'):
     WRITE = 0x1
     ALLOC = 0x2
     EXECINSTR = 0x4
