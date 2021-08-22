@@ -92,7 +92,7 @@ class _EnumItem(int):
         return obj
 
     def __repr__(self) -> str:
-        return f'<{self.name}: {int(self)}>'
+        return f'<{self.name}: {hex(self)}>'
 
 
 class _EnumFlagItem(_EnumItem):
