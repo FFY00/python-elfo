@@ -244,7 +244,7 @@ class _DeriveSerialization(abc.ABC):
 class ELFSectionHeader(_Printable, _DeriveSerialization):
     """ELF file section header."""
 
-    _e_ident: ELFHeader.types.e_ident
+    _e_ident: ELFHeader.types.e_ident = dataclasses.field(compare=False)
 
     sh_name: int
     sh_type: int
@@ -280,7 +280,7 @@ class ELFSectionHeader(_Printable, _DeriveSerialization):
 class ELFProgramHeader(_Printable, _DeriveSerialization):
     """ELF file program header."""
 
-    _e_ident: ELFHeader.types.e_ident
+    _e_ident: ELFHeader.types.e_ident = dataclasses.field(compare=False)
 
     p_type: int
     p_flags: int
