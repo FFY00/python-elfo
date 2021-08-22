@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import abc
+import copy
 import dataclasses
 import functools
 import io
@@ -343,7 +344,10 @@ class ELF(_Printable):
     header: ELFHeader
     section_headers: List[ELFSectionHeader]
     program_headers: List[ELFProgramHeader]
-    data: bytes
+    data: bytearray
+
+    def __post_init__(self) -> None:
+        self._original_header = copy.copy(self.header)
 
     @classmethod
     def from_fd(cls, fd: io.RawIOBase) -> ELF:
@@ -364,7 +368,7 @@ class ELF(_Printable):
             header.e_phnum,
             header.e_ident,
         )
-        return cls(header, section_headers, program_headers, data)
+        return cls(header, section_headers, program_headers, bytearray(data))
 
     @classmethod
     def from_path(cls, path: str) -> ELF:
@@ -376,4 +380,39 @@ class ELF(_Printable):
         return len(self.header) + len(self.data)
 
     def __bytes__(self) -> bytes:
+        if len(self.section_headers) > self._original_header.e_shnum:
+            raise NotImplementedError('Cannot write more section headers than the file had originally')
+        if len(self.program_headers) > self._original_header.e_phnum:
+            raise NotImplementedError('Cannot write more program headers than the file had originally')
+
+        # update the header
+        self.header.e_shnum = len(self.section_headers)
+        self.header.e_phnum = len(self.program_headers)
+
+        # write section headers
+        offset, size = self._offset(self.header.e_shoff), self.header.e_shentsize
+        for i, sh in enumerate(self.section_headers):
+            self.data[offset+(i*size):offset+((i+1)*size)] = bytes(sh)
+        # write 0xff to the leftover space for easy identification
+        if __debug__:
+            leftover = self._original_header.e_shnum - self.header.e_shnum
+            if leftover:
+                start = self._original_header.e_shnum - leftover
+                self.data[offset+(start*size):offset+(leftover*size)] = b'\xff' * ((leftover-start)*size)
+
+        # write program headers
+        offset, size = self._offset(self.header.e_phoff), self.header.e_phentsize
+        for i, ph in enumerate(self.program_headers):
+            self.data[offset+(i*size):offset+((i+1)*size)] = bytes(ph)
+        # write 0xff to the leftover space for easy identification
+        if __debug__:
+            leftover = self._original_header.e_phnum - self.header.e_phnum
+            if leftover:
+                start = self._original_header.e_phnum - leftover
+                self.data[offset+(start*size):offset+(leftover*size)] = b'\xff' * ((leftover-start)*size)
+
         return bytes(self.header) + self.data
+
+    def _offset(self, absolute: int) -> int:
+        """Given an absolute offset in the file, returns the offset in self.data."""
+        return absolute - len(self.header)

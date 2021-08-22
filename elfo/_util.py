@@ -37,7 +37,7 @@ class _Printable():
             # print
             if isinstance(value, _Printable):
                 return value._repr(level + 1)
-            elif isinstance(value, bytes) and len(value) > 32:
+            elif (isinstance(value, bytes) or isinstance(value, bytearray)) and len(value) > 32:
                 return f'<bytes: size={len(value)}>'
             elif (
                 isinstance(value, int)
