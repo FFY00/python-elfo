@@ -208,8 +208,7 @@ class _DeriveSerialization(abc.ABC):
 
     @classmethod
     def from_fd(cls: Type[T], fd: io.RawIOBase, e_ident: ELFHeader.types.e_ident) -> T:
-        data_format = cls._format(e_ident)
-        data = fd.read(struct.calcsize(data_format))
+        data = fd.read(cls.size(e_ident))
         assert data
         return cls.from_bytes(data, e_ident)
 
