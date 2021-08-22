@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import abc
 import dataclasses
+import functools
 import io
 import struct
 import sys
+import typing
 
-from typing import Any, Tuple, Union
+from typing import Any, List, Tuple, Type, Union
 
-from elfo._data import EI, ELFCLASS, ELFDATA, EM, ET, EV, OSABI
+from elfo._data import EI, ELFCLASS, ELFDATA, EM, ET, EV, OSABI, SHF, SHT
 from elfo._util import _Printable
 
 
@@ -117,7 +120,7 @@ class ELFHeader(_Printable):
     e_shoff: int
     e_flags: int
     e_ehsize: int
-    e_phensize: int
+    e_phentsize: int
     e_phnum: int
     e_shentsize: int
     e_shnum: int
@@ -132,6 +135,11 @@ class ELFHeader(_Printable):
             raise ELFException(
                 f'Invalid e_ehsize, got `{self.e_ehsize}` '
                 f'but was expecting `{len(self)}`'
+            )
+        if self.e_shentsize != ELFSectionHeader.size(self.e_ident):
+            raise ELFException(
+                f'Invalid e_shentsize, got `{self.e_shentsize}` '
+                f'but was expecting `{ELFSectionHeader.size(self.e_ident)}`'
             )
 
     @staticmethod
@@ -171,7 +179,7 @@ class ELFHeader(_Printable):
             self.e_shoff,
             self.e_flags,
             self.e_ehsize,
-            self.e_phensize,
+            self.e_phentsize,
             self.e_phnum,
             self.e_shentsize,
             self.e_shnum,
@@ -179,11 +187,160 @@ class ELFHeader(_Printable):
         )
 
 
+T = typing.TypeVar('T', bound='_DeriveSerialization')
+
+
+class _DeriveSerialization(abc.ABC):
+    """Helper class that derives the serialization methods from a use-given _format method."""
+
+    _e_ident: ELFHeader.types.e_ident
+
+    def __init__(self, _e_ident: ELFHeader.types.e_ident, *args: int) -> None:
+        raise NotImplementedError('Must define a __init__ for _DeriveSerialization types')
+
+    @staticmethod
+    @abc.abstractmethod
+    def _format(e_ident: ELFHeader.types.e_ident) -> str: ...
+
+    @classmethod
+    def from_bytes(cls: Type[T], data: bytes, e_ident: ELFHeader.types.e_ident) -> T:
+        return cls(e_ident, *struct.unpack(cls._format(e_ident), data))
+
+    @classmethod
+    def from_fd(cls: Type[T], fd: io.RawIOBase, e_ident: ELFHeader.types.e_ident) -> T:
+        data_format = cls._format(e_ident)
+        data = fd.read(struct.calcsize(data_format))
+        assert data
+        return cls.from_bytes(data, e_ident)
+
+    @classmethod
+    def multiple_from_bytes(
+        cls: Type[T],
+        data: bytes,
+        count: int,
+        e_ident: ELFHeader.types.e_ident,
+    ) -> List[T]:
+        size = cls.size(e_ident)
+        return [
+            cls.from_bytes(data[i*size:(i+1)*size], e_ident)
+            for i in range(count)
+        ]
+
+    @classmethod
+    def size(cls, e_ident: ELFHeader.types.e_ident) -> int:
+        return struct.calcsize(cls._format(e_ident))
+
+    @functools.lru_cache(maxsize=None)
+    def __len__(self) -> int:
+        return self.size(self._e_ident)
+
+    def __bytes__(self) -> bytes:
+        return struct.pack(
+            self._format(self._e_ident),
+            *dataclasses.fields(self),
+        )
+
+
+@dataclasses.dataclass(repr=False)
+class ELFSectionHeader(_Printable, _DeriveSerialization):
+    """ELF file section header."""
+
+    _e_ident: ELFHeader.types.e_ident
+
+    sh_name: int
+    sh_type: int
+    sh_flags: int
+    sh_addr: int
+    sh_offset: int
+    sh_size: int
+    sh_link: int
+    sh_info: int
+    sh_addralign: int
+    sh_entsize: int
+
+    def __post_init__(self) -> None:
+        self.sh_type = SHT.from_value_fallback(self.sh_type)
+        self.sh_flags = SHF.from_value(self.sh_flags)
+
+    @staticmethod
+    def _format(e_ident: ELFHeader.types.e_ident) -> str:
+        return ''.join((
+            e_ident.endianess,
+            'II',
+            e_ident.native,
+            e_ident.native,
+            e_ident.native,
+            e_ident.native,
+            'II',
+            e_ident.native,
+            e_ident.native,
+        ))
+
+
+@dataclasses.dataclass(repr=False)
+class ELFProgramHeader(_Printable, _DeriveSerialization):
+    """ELF file program header."""
+
+    _e_ident: ELFHeader.types.e_ident
+
+    p_type: int
+    p_flags: int
+    p_offset: int
+    p_vaddr: int
+    p_paddr: int
+    p_filesz: int
+    p_memsz: int
+    p_align: int
+
+    def __init__(
+        self,
+        _e_ident: ELFHeader.types.e_ident,
+        *args: int,
+    ) -> None:
+        if len(args) != 8:
+            raise ValueError(f'Required 8 arguments, got {len(args)}')
+        self._e_ident = _e_ident
+        if _e_ident.file_class == ELFCLASS._32:
+            (
+                self.p_type,
+                self.p_offset,
+                self.p_vaddr,
+                self.p_paddr,
+                self.p_filesz,
+                self.p_memsz,
+                self.p_flags,
+                self.p_align,
+            ) = args
+        elif _e_ident.file_class == ELFCLASS._64:
+            (
+                self.p_type,
+                self.p_flags,
+                self.p_offset,
+                self.p_vaddr,
+                self.p_paddr,
+                self.p_filesz,
+                self.p_memsz,
+                self.p_align,
+            ) = args
+        else:
+            raise ValueError(f'Unkown class: {_e_ident.file_class}')
+
+    @staticmethod
+    def _format(e_ident: ELFHeader.types.e_ident) -> str:
+        if e_ident.file_class == ELFCLASS._32:
+            return 'IIIIIIII'
+        elif e_ident.file_class == ELFCLASS._64:
+            return 'IIQQQQQQ'
+        raise ValueError(f'Unkown class: {e_ident.file_class}')
+
+
 @dataclasses.dataclass(repr=False)
 class ELF(_Printable):
     """ELF file."""
 
     header: ELFHeader
+    section_headers: List[ELFSectionHeader]
+    program_headers: List[ELFProgramHeader]
     data: bytes
 
     @classmethod
@@ -191,7 +348,21 @@ class ELF(_Printable):
         header = ELFHeader.from_fd(fd)
         data = fd.read()
         assert data
-        return cls(header, data)
+        # section headers
+        offset = header.e_shoff - len(header)
+        section_headers = ELFSectionHeader.multiple_from_bytes(
+            data[offset:offset+(header.e_shentsize*header.e_shnum)],
+            header.e_shnum,
+            header.e_ident,
+        )
+        # program headers
+        offset = header.e_phoff - len(header)
+        program_headers = ELFProgramHeader.multiple_from_bytes(
+            data[offset:offset+(header.e_phentsize*header.e_phnum)],
+            header.e_phnum,
+            header.e_ident,
+        )
+        return cls(header, section_headers, program_headers, data)
 
     @classmethod
     def from_path(cls, path: str) -> ELF:

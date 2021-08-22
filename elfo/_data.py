@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 
-from elfo._util import _Enum
+from elfo._util import _Enum, _EnumFlagItem
 
 
 class EI(_Enum):
@@ -149,3 +149,29 @@ class EM(_Enum):
 class EV(_Enum):
     NONE = 0x00
     CURRENT = 0x01
+
+
+class SHT(_Enum):
+    NULL = 0
+    PROGBITS = 1
+    SYMTAB = 2
+    STRTAB = 3
+    RELA = 4
+    HASH = 5
+    DYNAMIC = 6
+    NOTE = 7
+    NOBITS = 8
+    REL = 9
+    SHLIB = 10
+    DYNSYM = 11
+    LOPROC = 0x70000000
+    HIPROC = 0x7fffffff
+    LOUSER = 0x80000000
+    HIUSER = 0xffffffff
+
+
+class SHF(_Enum, item_cls=_EnumFlagItem):
+    WRITE = 0x1
+    ALLOC = 0x2
+    EXECINSTR = 0x4
+    MASKPROC = 0xf0000000
