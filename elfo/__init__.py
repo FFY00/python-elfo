@@ -103,7 +103,7 @@ class ELFHeader(_Printable):
 
             def __bytes__(self) -> bytes:
                 return self.file_identification + struct.pack(
-                    'BBBBB',
+                    self.endianess + 'BBBBB',
                     self.file_class,
                     self.data_encoding,
                     self.file_version,
