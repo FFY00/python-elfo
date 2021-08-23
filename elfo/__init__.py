@@ -329,9 +329,9 @@ class ELFProgramHeader(_Printable, _DeriveSerialization):
     @staticmethod
     def _format(e_ident: ELFHeader.types.e_ident) -> str:
         if e_ident.file_class == ELFCLASS._32:
-            return 'IIIIIIII'
+            return e_ident.endianess + 'IIIIIIII'
         elif e_ident.file_class == ELFCLASS._64:
-            return 'IIQQQQQQ'
+            return e_ident.endianess + 'IIQQQQQQ'
         raise ValueError(f'Unkown class: {e_ident.file_class}')
 
 
