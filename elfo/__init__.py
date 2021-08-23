@@ -5,7 +5,6 @@ from __future__ import annotations
 import abc
 import copy
 import dataclasses
-import functools
 import io
 import struct
 import sys
@@ -230,7 +229,6 @@ class _DeriveSerialization(abc.ABC):
     def size(cls, e_ident: ELFHeader.types.e_ident) -> int:
         return struct.calcsize(cls._format(e_ident))
 
-    @functools.lru_cache(maxsize=None)
     def __len__(self) -> int:
         return self.size(self._e_ident)
 
