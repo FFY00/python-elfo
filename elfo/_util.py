@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 import typing
 
-from typing import Any, Dict, Sequence, Tuple, Type
+from typing import Any, Dict, Generic, List, Optional, Sequence, Set, Tuple, Type
 
 
 if sys.version_info >= (3, 8):
@@ -205,3 +205,42 @@ class _Enum(metaclass=_EnumMeta):
             return cls.from_value(value)
         except ValueError:
             return value
+
+
+T = typing.TypeVar('T')
+
+
+class Grouper(Generic[T]):
+    def __init__(self) -> None:
+        self.groups: List[Set[T]] = []
+
+    def _new_group(self) -> Set[T]:
+        group: Set[T] = set()
+        self.groups.append(group)
+        return group
+
+    def add(self, *values: T) -> None:
+        # build group list
+        groups = list(filter(None, [
+            self.group_of(value) for value in values
+        ]))
+        if not groups:
+            groups.append(self._new_group())
+        # merge groups into the first
+        target = groups[0]
+        assert target in self.groups, 'pre'
+        for merge_group in groups[1:]:
+            if merge_group is not target:
+                self.groups.remove(merge_group)
+                target.update(merge_group)
+        # add the values to the group
+        target.update(values)
+
+    def group_of(self, value: T) -> Optional[Set[T]]:
+        for group in self.groups:
+            if value in group:
+                return group
+        return None
+
+    def as_lists(self) -> List[List[T]]:
+        return [list(group) for group in self.groups]

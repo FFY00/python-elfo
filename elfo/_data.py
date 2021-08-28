@@ -171,3 +171,24 @@ class SHF(_Enum, data_type='flag'):
     ALLOC = 0x2
     EXECINSTR = 0x4
     MASKPROC = 0xf0000000
+
+
+class PT(_Enum):
+    NULL = 0
+    LOAD = 1
+    DYNAMIC = 2
+    INTERP = 3
+    NOTE = 4
+    SHLIB = 5
+    PHDR = 6
+    TLS = 7
+    OS = 0x60000000, 0x6fffffff
+    PROC = 0x70000000, 0x7fffffff
+
+
+class PF(_Enum, data_type='flag'):
+    X = 0x1
+    W = 0x2
+    R = 0x4
+    MASKOS = 0x0ff00000
+    MASKPROC = 0xf0000000
