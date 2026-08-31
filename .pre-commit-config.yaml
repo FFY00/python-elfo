@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.0.1
+  rev: v6.0.0
   hooks:
   - id: check-ast
   - id: check-builtin-literals
@@ -12,12 +12,12 @@ repos:
   - id: double-quote-string-fixer
   - id: end-of-file-fixer
   - id: trailing-whitespace
-- repo: https://github.com/pre-commit/mirrors-isort
-  rev: v5.9.3
+- repo: https://github.com/PyCQA/isort
+  rev: 9.0.1
   hooks:
   - id: isort
-- repo: https://gitlab.com/pycqa/flake8
-  rev: 3.9.2
+- repo: https://github.com/PyCQA/flake8
+  rev: 7.3.0
   hooks:
   - id: flake8
     language_version: python3.8
